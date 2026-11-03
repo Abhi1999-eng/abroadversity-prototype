@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Programmes · Abroadversity</title>
+<meta name="description" content="Compare study abroad programmes by fee, intake and duration.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="list">
+<div data-site-header></div>
+<main>
+  <section class="page-head">
+    <div class="container">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span>/</span><span>Programmes</span></nav>
+      <h1 id="list-title" style="font-size:clamp(1.7rem,3.4vw,2.4rem)">Programmes</h1>
+      <div class="active-filters" id="active"></div>
+    </div>
+  </section>
+  <div class="container list-layout">
+    <aside class="filters" id="filters" aria-label="Filters"></aside>
+    <div>
+      <div class="results-bar">
+        <button type="button" class="btn btn-ghost filters-btn" id="filters-btn" aria-expanded="false" aria-controls="filters">Filters<span id="filters-count"></span></button>
+        <span class="muted small" id="result-count"></span>
+        <label class="small" for="sort">Sort
+          <select class="select" id="sort">
+            <option value="fee">Lowest fee</option>
+            <option value="intake">Soonest intake</option>
+            <option value="duration">Shortest</option>
+          </select>
+        </label>
+      </div>
+      <div class="passes" id="results" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="scrim" id="scrim" hidden></div>
+  <div id="counselling-slot"></div>
+</main>
+<div data-site-footer></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Abroadversity · Find a programme abroad you can get into</title>
+<meta name="description" content="Pick a subject and level, see real programmes with fees and intakes, and check your eligibility in a minute.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="home">
+<div data-site-header></div>
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Study abroad, minus the guesswork</p>
+        <h1>Find a programme abroad you can get into.</h1>
+        <p class="lede">Choose what you know and leave the rest on “Any”. See real programmes with fees in rupees, intakes and entry requirements.</p>
+        <form class="finder" id="finder">
+          <div class="finder-fields">
+            <div class="field"><label for="f-country">Country</label><select class="select" id="f-country"></select></div>
+            <div class="field"><label for="f-level">Level</label><select class="select" id="f-level"></select></div>
+            <div class="field"><label for="f-subject">What do you want to study?</label><select class="select" id="f-subject"></select></div>
+          </div>
+          <div class="finder-foot">
+            <span class="note" id="finder-note"></span>
+            <button class="btn btn-primary btn-lg" id="finder-go" type="submit">Show programmes →</button>
+          </div>
+        </form>
+      </div>
+      <aside class="board" aria-label="Popular routes">
+        <div class="board-head"><span>Departures</span><b>Next intakes</b></div>
+        <div class="board-rows" id="board-rows"></div>
+        <p class="board-foot">Route · subject · next intake · programmes. Tap a row to see them.</p>
+      </aside>
+    </div>
+  </section>
+
+  <div class="stats-band"><div class="container stats" id="stats"></div></div>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head"><p class="eyebrow">How it works</p><h2>Three steps, no forms first</h2></div>
+      <div class="steps">
+        <div class="step"><span class="num">STEP 1</span><h3>Choose</h3><p>Subject, level and, if you know it, a country.</p></div>
+        <div class="step"><span class="num">STEP 2</span><h3>Compare</h3><p>Fees in rupees, duration, intakes and English scores, side by side.</p></div>
+        <div class="step"><span class="num">STEP 3</span><h3>Check and apply</h3><p>Four questions, an instant answer, then a counsellor helps you apply.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="countries" style="padding-top:0">
+    <div class="container">
+      <div class="section-head"><p class="eyebrow">Destinations</p><h2>Or start from a country</h2></div>
+      <div class="countries" id="country-cards"></div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0">
+    <div class="container">
+      <div class="section-head row"><div class="stack"><p class="eyebrow">Programmes</p><h2>Popular with students from India</h2></div><a class="btn btn-ghost" href="programmes.html">See all programmes</a></div>
+      <div class="passes grid-3" id="featured"></div>
+    </div>
+  </section>
+
+  <div id="counselling-slot"></div>
+</main>
+<div data-site-footer></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
