@@ -78,11 +78,33 @@
   var NAV = [
     { label: "Programmes", href: "programmes.html", key: "list" },
     { label: "Countries", href: "index.html#countries", key: "country" },
-    { label: "Universities", href: "#", soon: true },
-    { label: "Scholarships", href: "#", soon: true },
+    { label: "Universities", href: "universities.html", key: "universities" },
+    { label: "Stays", href: "stays.html", key: "stays" },
     { label: "Counselling", href: "#counselling" },
-    { label: "About", href: "#", soon: true },
+    { label: "My journey", href: "student.html", key: "student" },
   ];
+
+  // Every page opens with the demo bar: one link per side of Abroadversity.
+  var SIDES = [
+    { key: "site", label: "Website", href: "index.html" },
+    { key: "student", label: "Student", href: "student.html" },
+    { key: "counsellor", label: "Counsellor", href: "counsellor.html" },
+    { key: "university", label: "University", href: "university.html" },
+    { key: "consultant", label: "Visa consultant", href: "consultant.html" },
+    { key: "partner", label: "Stays partner", href: "accommodation.html" },
+  ];
+  function demoBar(page) {
+    var side = { student: "student", counsellor: "counsellor", university: "university", consultant: "consultant", partner: "partner", demo: "" }[page];
+    if (side === undefined) side = "site";
+    return '<div class="demo-bar"><div class="container demo-row">' +
+      '<a class="demo-tag" href="demo.html">Demo</a>' +
+      '<nav class="demo-sides" aria-label="Demo sides"><span class="demo-label">View as</span>' +
+      SIDES.map(function (s) { return '<a href="' + s.href + '"' + (s.key === side ? ' aria-current="page"' : "") + ">" + s.label + "</a>"; }).join("") +
+      "</nav>" +
+      '<span class="demo-note">Dummy data, saved in this browser</span>' +
+      '<button type="button" class="demo-reset" data-reset>Reset demo</button>' +
+      "</div></div>";
+  }
 
   function navLinks(active) {
     return NAV.map(function (n) {
@@ -91,10 +113,10 @@
   }
 
   function renderChrome(page) {
+    document.body.insertAdjacentHTML("afterbegin", demoBar(page));
     var head = $("[data-site-header]");
     if (head) {
       head.outerHTML =
-        '<div class="proto-bar"><b>Prototype</b> · real country and university names · fees, scores and dates are dummy data</div>' +
         '<header class="site-head"><div class="container head-row">' +
         '<a class="brand" href="index.html" aria-label="Abroadversity home"><span class="brand-mark" aria-hidden="true">A</span>Abroadversity</a>' +
         '<nav class="main-nav" aria-label="Main">' + navLinks(page) + "</nav>" +
@@ -112,13 +134,21 @@
         '<footer class="site-foot"><div class="container foot-grid">' +
         '<div><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">A</span>Abroadversity</a>' +
         "<p>Find a programme abroad you can get into and afford, then apply with free help from our counsellors.</p></div>" +
-        '<div><h4>Explore</h4><ul><li><a href="programmes.html">Programmes</a></li><li><a href="index.html#countries">Countries</a></li><li><a href="#" data-soon>Universities</a></li><li><a href="#" data-soon>Scholarships</a></li></ul></div>' +
-        '<div><h4>Get help</h4><ul><li><a href="#" data-counsel>Free counselling</a></li><li><a href="programmes.html">Check eligibility</a></li><li><a href="#" data-soon>Contact us</a></li></ul></div>' +
-        '<div><h4>Company</h4><ul><li><a href="#" data-soon>About</a></li><li><a href="#" data-soon>Events</a></li><li><a href="#" data-soon>Careers</a></li><li><a href="#" data-soon>Privacy</a></li></ul></div>' +
+        '<div><h4>Explore</h4><ul><li><a href="programmes.html">Programmes</a></li><li><a href="index.html#countries">Countries</a></li><li><a href="universities.html">Universities</a></li><li><a href="stays.html">Student stays</a></li></ul></div>' +
+        '<div><h4>Get help</h4><ul><li><a href="#" data-counsel>Free counselling</a></li><li><a href="programmes.html">Check eligibility</a></li><li><a href="student.html">My journey</a></li></ul></div>' +
+        '<div><h4>Partners</h4><ul><li><a href="university.html">For universities</a></li><li><a href="consultant.html">For visa consultants</a></li><li><a href="accommodation.html">For stays partners</a></li><li><a href="counsellor.html">Counsellor desk</a></li><li><a href="demo.html">How the demo works</a></li></ul></div>' +
         "</div></footer>";
     }
 
     document.addEventListener("click", function (e) {
+      if (e.target.closest("[data-reset]")) {
+        if (!D.db) return;
+        D.db.reset();
+        ["student", "counsellor", "university", "consultant", "partner"].forEach(function (r) { D.db.as(r, ""); });
+        toast("Demo data reset");
+        setTimeout(function () { location.reload(); }, 600);
+        return;
+      }
       var soon = e.target.closest("[data-soon]");
       if (soon) { e.preventDefault(); toast("Not in the prototype yet"); return; }
       var menu = e.target.closest(".menu-btn");
@@ -266,7 +296,8 @@
     var live = openWindow(p);
     var free = tuitionLakh(p) < 1;
     // At most one status pill (the most useful one), then the duration pill, which every card has.
-    if (live) tags.push('<span class="tag tag-live">Ongoing intake · apply by ' + dateLabel(live.closes, false) + "</span>");
+    if (p.closed) tags.push('<span class="tag tag-amber">Applications paused</span>');
+    else if (live) tags.push('<span class="tag tag-live">Ongoing intake · apply by ' + dateLabel(live.closes, false) + "</span>");
     else if (!free && opts.budget && tuitionLakh(p) <= opts.budget) tags.push('<span class="tag tag-green">Fits your budget</span>');
     else if (p.intakes.length > 1) tags.push('<span class="tag tag-amber">' + p.intakes.length + " intakes</span>");
     tags.push('<span class="tag tag-sky">' + p.years + "-year " + (p.level === "pg-diploma" ? "diploma" : "degree") + "</span>");
@@ -578,7 +609,9 @@
       '<div class="key-fact"><small>Duration</small><b>' + years(p.years) + "</b><span>Full time, on campus</span></div>" +
       '<div class="key-fact"><small>Intakes</small><b>' + p.intakes.map(intakeLabel).join(", ") + "</b>" + (live ? '<span class="live-text">' + intakeLabel(live.start) + " intake is ongoing</span>" : "<span>" + plural(p.intakes.length, "start date") + "</span>") + "</div>" +
       '<div class="key-fact"><small>Apply by</small><b>' + dateLabel(next.closes) + "</b><span>For the " + intakeLabel(next.start) + " intake</span></div>" +
-      "</div></div></section>" +
+      "</div>" +
+      (p.verified ? '<p class="verified small">' + CHECK + " Fees and intakes verified by " + esc(u.name) + " on " + dateLabel(p.verified.slice(0, 10)) + "</p>" : "") +
+      "</div></section>" +
 
       '<div class="container prog-layout"><div class="prog-main">' +
       '<section class="panel"><h2>Overview</h2><p>' + esc(p.overview) + "</p></section>" +
@@ -604,7 +637,8 @@
 
       '<aside class="cta-card" aria-label="Check eligibility">' +
       "<h3>Can I get into this programme?</h3>" +
-      (live ? '<p class="live-note"><span class="tag tag-live">Ongoing intake</span>' + intakeLabel(live.start) + " applications close on " + dateLabel(live.closes) + ".</p>" : "") +
+      (p.closed ? '<p class="live-note"><span class="tag tag-amber">Applications paused</span>' + esc(u.name) + " is not taking new applications right now. Check anyway and a counsellor will tell you when it reopens.</p>" :
+        live ? '<p class="live-note"><span class="tag tag-live">Ongoing intake</span>' + intakeLabel(live.start) + " applications close on " + dateLabel(live.closes) + ".</p>" : "") +
       "<p>Answer four questions about your marks, English test and budget. You see the result right away.</p>" +
       '<button type="button" class="btn btn-primary btn-lg btn-block" data-check>Check eligibility</button>' +
       '<p class="secondary">or <button type="button" class="btn-link" data-counsel>talk to a counsellor</button></p>' +
@@ -761,12 +795,18 @@
       if (step === 2) {
         if (!validStep(["c-name", "c-phone", "c-email"])) return;
         var name = $("#c-name", dlg).value.trim();
-        var lead = { programme: p.id, at: new Date().toISOString(), name: name, phone: $("#c-phone", dlg).value.trim(), email: $("#c-email", dlg).value.trim(), answers: { qual: answers.qual, pct: answers.pct, test: answers.test, score: answers.score, intake: answers.intake, budget: answers.budget }, result: answers.result.level };
-        try { var all = JSON.parse(localStorage.getItem("abv.leads") || "[]"); all.push(lead); localStorage.setItem("abv.leads", JSON.stringify(all)); } catch (err) { /* storage blocked */ }
+        // The lead lands in a counsellor's inbox with the programme and answers attached.
+        var made = D.db.createLead({
+          programmeId: p.id, name: name, phone: $("#c-phone", dlg).value.trim(), email: $("#c-email", dlg).value.trim(),
+          eligibility: { qual: answers.qual, pct: answers.pct, test: answers.test, score: answers.score, intake: answers.intake, budget: answers.budget, result: answers.result.level },
+        });
+        D.db.as("student", made.student.id);
+        var counsellor = D.db.counsellor(made.kase.counsellorId);
         var cheaper = D.PROGRAMMES.filter(function (x) { return x.id !== p.id && x.subject === p.subject && totalLakh(x) <= answers.budget; }).slice(0, 2);
         $("#done", dlg).innerHTML =
           '<div class="result good" role="status"><h3>Sent. Thanks, ' + esc(name.split(" ")[0]) + "</h3>" +
-          '<p class="small">A counsellor will message you on WhatsApp within one working day about ' + esc(p.name) + " at " + esc(uniOf(p).name) + ". Your answers are attached, so you won’t be asked again.</p></div>" +
+          '<p class="small">' + esc(counsellor.name) + " will message you on WhatsApp within one working day about " + esc(p.name) + " at " + esc(uniOf(p).name) + ". Your answers are attached, so you won’t be asked again.</p>" +
+          '<p class="small"><a class="btn btn-dark" href="student.html?as=' + made.student.id + "&case=" + made.kase.id + '">Track it in My journey →</a></p></div>' +
           (cheaper.length ? '<p class="small" style="font-weight:600">Also within your budget</p><div class="passes on-card">' + cheaper.map(function (x) { return passCard(x); }).join("") + "</div>" : "");
         show(3);
         return;
@@ -923,8 +963,17 @@
 
   function faq(q, a) { return "<details><summary>" + esc(q) + "</summary><p>" + esc(a) + "</p></details>"; }
 
+  /* ---------- shared with the portals (portal.js) ---------- */
+  D.ui = {
+    $: $, $$: $$, byId: byId, esc: esc, params: params, plural: plural, toast: toast,
+    uniOf: uniOf, countryOf: countryOf, subjectName: subjectName, levelName: levelName,
+    money: money, lakh: lakh, rupees: rupees, approx: approx, intakeLabel: intakeLabel, dateLabel: dateLabel,
+    passCard: passCard, flag: flag, initials: initials, counsellingBand: counsellingBand, icon: icon, PIN: PIN, CHECK: CHECK,
+  };
+
   /* ---------- boot ---------- */
   var page = document.body.dataset.page;
   renderChrome(page);
-  ({ home: initHome, list: initList, programme: initProgramme, country: initCountry }[page] || function () {})();
+  D.pages = D.pages || {};
+  (D.pages[page] || { home: initHome, list: initList, programme: initProgramme, country: initCountry }[page] || function () {})();
 })();

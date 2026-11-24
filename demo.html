@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the demo works · Abroadversity</title>
+<meta name="description" content="One student journey, seen from five sides: student, counsellor, university, visa consultant and stays partner.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="demo">
+<div data-site-header></div>
+<main>
+  <section class="page-head demo-hero">
+    <div class="container">
+      <p class="eyebrow">Abroadversity demo</p>
+      <h1>One journey, five sides</h1>
+      <p class="lede">A student finds a programme and checks eligibility. A counsellor applies, the university decides, a stays partner confirms a room and a visa consultant files the visa. Each side has its own page, and they all share the same data.</p>
+      <div class="stats" id="demo-stats"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head"><p class="eyebrow">The five sides</p><h2>Open any of them</h2><p>No sign-in in the demo. Each page has a "Viewing as" switch, so you can be any student, counsellor or partner.</p></div>
+      <div class="sides">
+        <a class="side-card" href="index.html"><small>Website</small><h3>Find and check</h3><p>Choose subject, level and country, compare programmes, then check eligibility in four questions.</p><span>Open the website →</span></a>
+        <a class="side-card" href="student.html"><small>Student</small><h3>My journey</h3><p>Progress, documents, the offer, a room near campus, visa steps and messages with the counsellor.</p><span>Open as a student →</span></a>
+        <a class="side-card" href="counsellor.html"><small>Counsellor</small><h3>Leads inbox</h3><p>Every eligibility check arrives with the programme and answers. Contact, apply, refer for visa, enrol.</p><span>Open the counsellor desk →</span></a>
+        <a class="side-card" href="university.html"><small>University</small><h3>Admissions portal</h3><p>Review applications against your requirements, make offers, and keep fees and intakes current on the site.</p><span>Open as a university →</span></a>
+        <a class="side-card" href="consultant.html"><small>Visa consultant</small><h3>Visa files</h3><p>Students referred after an offer, with funds, course dates and address in one file. Tick each visa step.</p><span>Open as a visa partner →</span></a>
+        <a class="side-card" href="accommodation.html"><small>Stays partner</small><h3>Room requests</h3><p>Students with offers request rooms near campus. Confirm or decline, and edit rent and availability.</p><span>Open as a stays partner →</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band-white">
+    <div class="container">
+      <div class="section-head"><p class="eyebrow">Try the whole flow</p><h2>Seven steps, about five minutes</h2><p>Tip: open two tabs side by side. A change on one side shows on the other at once.</p></div>
+      <ol class="story">
+        <li><b>Student</b> Open <a href="programme.html?id=toronto-computer-science-m">MSc Computer Science at Toronto</a>, press <i>Check eligibility</i> and send it. Then press <i>Track it in My journey</i>.</li>
+        <li><b>Counsellor</b> On the <a href="counsellor.html">counsellor desk</a>, switch to <i>Whole team</i> if needed, open the new lead and send the WhatsApp.</li>
+        <li><b>Student</b> Upload the documents in <a href="student.html">My journey</a>. The counsellor then presses <i>Submit application</i>.</li>
+        <li><b>University</b> In the <a href="university.html?as=toronto">Toronto admissions portal</a>, open the application and send an offer.</li>
+        <li><b>Student</b> Accept the offer and request a room. The <a href="accommodation.html?as=p1">stays partner</a> confirms it.</li>
+        <li><b>Counsellor</b> Refer the student to a visa consultant. The <a href="consultant.html?as=k1">visa partner</a> ticks the steps up to <i>Visa approved</i>.</li>
+        <li><b>Counsellor</b> Press <i>Mark enrolled</i>. The student’s tracker is complete.</li>
+      </ol>
+      <p class="small muted" style="margin-top:20px">Seeded students are already at every stage, so each side has work waiting. <button type="button" class="btn-link" data-reset>Reset the demo</button> to start again.</p>
+    </div>
+  </section>
+</main>
+<div data-site-footer></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/portal.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

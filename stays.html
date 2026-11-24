@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student stays · Abroadversity</title>
+<meta name="description" content="Rooms near your university, from partners who confirm within a day.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="stays">
+<div data-site-header></div>
+<main>
+  <section class="page-head">
+    <div class="container">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span>/</span><span>Student stays</span></nav>
+      <h1 style="font-size:clamp(1.7rem,3.4vw,2.4rem)">Rooms near your university</h1>
+      <p class="muted" style="margin-top:8px;max-width:60ch">Ensuites, studios and shared flats from partners who confirm within a day. Rent is per month, with an approximate rupee value.</p>
+    </div>
+  </section>
+  <div class="container section" style="padding-top:28px">
+    <div class="results-bar">
+      <label class="small" for="stay-city">City <select class="select" id="stay-city"></select></label>
+      <span class="muted small" id="stay-count"></span>
+      <a class="small" href="accommodation.html">List your property →</a>
+    </div>
+    <div class="stays" id="stay-list"></div>
+  </div>
+  <div id="counselling-slot"></div>
+</main>
+<dialog class="modal" id="book" aria-label="Request a room"></dialog>
+<div data-site-footer></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/portal.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
