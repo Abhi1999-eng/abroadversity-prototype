@@ -1,5 +1,5 @@
-/* The five sides of the demo (student, counsellor, university, visa consultant,
-   stays partner) plus the public Stays, Universities and demo-guide pages.
+/* The six sides of the demo (student, counsellor, university, visa consultant,
+   stays partner, partner agency) plus the public Stays, Universities and demo-guide pages.
    Each page registers an init in ABV.pages; app.js runs it after the chrome. */
 (function () {
   "use strict";
@@ -37,6 +37,9 @@
   function missingDocs(c) { return D.DOCS.filter(function (d) { return c.docs[d.id].status !== "uploaded"; }); }
   function totalCostLakh(p) { var co = U.countryOf(p); return U.lakh(p.fee + co.living, co.currency); }
   function listingProvider(l) { return D.db.provider(l.provider); }
+  // Who the student deals with: a partner agency's name, or Abroadversity.
+  function brandOf(c) { var a = D.db.agencyOfCase(c); return a ? a.name : "Abroadversity"; }
+  function counsellorLabel(x) { var a = x.agencyId && D.db.agency(x.agencyId); return x.name + " · " + (a ? a.name + ", " : "") + x.city; }
 
   // Redraw keeps whatever the person was typing in fields marked data-keep.
   function keepDrafts(render) {
@@ -223,7 +226,7 @@
         '<section class="panel"><div class="panel-head"><h3>Documents</h3><span class="small muted">' + (D.DOCS.length - miss.length) + " of " + D.DOCS.length + " uploaded</span></div>" + docList(c, c.stage !== "closed") + "</section>" +
         timeline(c) +
         "</div><aside class=\"p-side\">" +
-        '<section class="panel person"><span class="avatar" aria-hidden="true">' + esc(U.initials(counsellor.name)) + "</span><div><small>Your counsellor</small><b>" + esc(counsellor.name) + "</b><span>" + esc(counsellor.city) + " · replies on WhatsApp</span></div></section>" +
+        '<section class="panel person"><span class="avatar" aria-hidden="true">' + esc(U.initials(counsellor.name)) + "</span><div><small>Your counsellor</small><b>" + esc(counsellor.name) + "</b><span>" + esc(brandOf(c)) + ", " + esc(counsellor.city) + " · replies on WhatsApp</span></div></section>" +
         thread(c, "student", s.name) +
         "</aside></div>";
     });
@@ -255,14 +258,14 @@
     ui();
     var cid = identity("counsellor", D.COUNSELLORS);
     var me = D.db.counsellor(cid);
-    $("#portal").innerHTML = shell({ role: "Counsellor desk", current: cid, people: D.COUNSELLORS.map(function (x) { return { id: x.id, label: x.name + " · " + x.city }; }) });
+    $("#portal").innerHTML = shell({ role: "Counsellor desk", current: cid, people: D.COUNSELLORS.map(function (x) { return { id: x.id, label: counsellorLabel(x) }; }) });
     bindAs("counsellor");
     bindThreads();
     document.title = "Counsellor desk · Abroadversity";
 
     var TEMPLATE = function (c) {
       var s = D.db.student(c.studentId), p = prog(c);
-      return "Hi " + first(s.name) + ", " + me.name + " from Abroadversity. Thanks for checking " + p.name + " at " + uniName(c) + ". " +
+      return "Hi " + first(s.name) + ", " + me.name + " from " + brandOf(c) + ". " + (c.agencyId ? "Following up on " : "Thanks for checking ") + p.name + " at " + uniName(c) + ". " +
         (c.eligibility.result === "good" ? "Your profile meets the requirements. " : "You’re close; let’s look at the details together. ") +
         (missingDocs(c).length ? "Could you upload your " + missingDocs(c).map(function (d) { return d.short; }).join(", ") + " on your dashboard? Then I’ll prepare the application." : "Your documents are all in, so I’ll prepare the application today.");
     };
@@ -270,13 +273,14 @@
     var render = keepDrafts(function () {
       var q = U.params();
       var scope = q.get("scope") || "mine", stage = q.get("stage") || "active";
-      var all = D.db.cases(scope === "mine" ? { counsellorId: cid } : {});
+      // "Whole team" is the counsellor's own organisation: Abroadversity, or their partner agency.
+      var all = D.db.cases(scope === "mine" ? { counsellorId: cid } : { agencyId: me.agencyId || null });
       var byStage = function (st) { return all.filter(function (c) { return st === "active" ? c.stage !== "closed" && c.stage !== "enrolled" : c.stage === st; }); };
       var list = byStage(stage).sort(function (a, b) { return (a.waitingSince ? 0 : 1) - (b.waitingSince ? 0 : 1) || (a.waitingSince || "").localeCompare(b.waitingSince || "") || b.updatedAt.localeCompare(a.updatedAt); });
       var sel = D.db.kase(q.get("case")) || list[0];
       var late = all.filter(function (c) { return c.waitingSince && Date.now() - new Date(c.waitingSince) > 24 * 3600e3; }).length;
 
-      var html = '<div class="p-hello"><div><p class="eyebrow">Leads inbox</p><h1>Good to see you, ' + esc(first(me.name)) + "</h1></div>" +
+      var html = '<div class="p-hello"><div><p class="eyebrow">Leads inbox' + (me.agencyId ? " · " + esc(D.db.agency(me.agencyId).name) : "") + '</p><h1>Good to see you, ' + esc(first(me.name)) + "</h1></div>" +
         '<div class="seg" role="group" aria-label="Whose leads"><button type="button" data-scope="mine" aria-pressed="' + (scope === "mine") + '">My leads</button><button type="button" data-scope="all" aria-pressed="' + (scope === "all") + '">Whole team</button></div></div>' +
         stats([
           { n: byStage("new").length, label: "New leads" },
@@ -389,7 +393,7 @@
       } else {
         html += '<div class="p-split"><div class="p-list" role="list">' + (apps.length ? apps.map(function (c) {
           var s = D.db.student(c.studentId), p = prog(c);
-          return '<button type="button" role="listitem" class="p-row' + (c === sel ? " is-on" : "") + '" data-open="' + c.id + '"><span class="p-row-top"><b>' + esc(s.name) + '</b><span class="chip-s chip-' + ({ submitted: "warn", "under-review": "sky", offer: "ok", rejected: "bad" }[c.uni.status] || "sky") + '">' + UNI_STATUS[c.uni.status] + '</span></span><span class="p-row-sub">' + esc(p.name) + '</span><span class="p-row-foot"><span class="small muted">Via Abroadversity · ' + ago(c.uni.at) + "</span></span></button>";
+          return '<button type="button" role="listitem" class="p-row' + (c === sel ? " is-on" : "") + '" data-open="' + c.id + '"><span class="p-row-top"><b>' + esc(s.name) + '</b><span class="chip-s chip-' + ({ submitted: "warn", "under-review": "sky", offer: "ok", rejected: "bad" }[c.uni.status] || "sky") + '">' + UNI_STATUS[c.uni.status] + '</span></span><span class="p-row-sub">' + esc(p.name) + '</span><span class="p-row-foot"><span class="small muted">Via Abroadversity' + (c.agencyId ? " · " + esc(brandOf(c)) : "") + " · " + ago(c.uni.at) + "</span></span></button>";
         }).join("") : '<p class="empty-s">No applications yet. When a counsellor submits one, it appears here.</p>') + "</div>";
         if (sel) html += '<div class="p-detail">' + uniDetail(sel) + "</div>";
         html += "</div>";
@@ -414,7 +418,7 @@
         '<section class="next-card"><p class="eyebrow">Your decision</p>' + act + "</section>" +
         '<section class="panel"><div class="panel-head"><h3>Applicant against your requirements</h3></div>' + eligibilityTable(c) + "</section>" +
         '<section class="panel"><div class="panel-head"><h3>Documents</h3></div>' + docList(c, false) + "</section>" +
-        '<section class="panel person"><span class="avatar" aria-hidden="true">' + esc(U.initials(counsellor.name)) + "</span><div><small>Abroadversity counsellor</small><b>" + esc(counsellor.name) + "</b><span>Questions about this applicant go to the counsellor</span></div></section>";
+        '<section class="panel person"><span class="avatar" aria-hidden="true">' + esc(U.initials(counsellor.name)) + "</span><div><small>" + (c.agencyId ? esc(brandOf(c)) + ", an Abroadversity partner" : "Abroadversity counsellor") + "</small><b>" + esc(counsellor.name) + "</b><span>Questions about this applicant go to the counsellor</span></div></section>";
     }
 
     D.db.on(render);
@@ -555,6 +559,211 @@
     document.addEventListener("change", function (e) { if (e.target.closest(".switch input")) e.target.nextElementSibling.textContent = e.target.checked ? "Available" : "Full"; });
   };
 
+  /* ================= PARTNER AGENCY ================= */
+  // A local consultancy on Abroadversity: its own students and counsellor, our catalogue,
+  // university submissions, visa and stays partners, and a share of what each student earns.
+  D.pages.agency = function () {
+    ui();
+    var gid = identity("agency", D.AGENCIES);
+    var ag = D.db.agency(gid), counsellor = D.db.counsellor(ag.counsellorId);
+    $("#portal").innerHTML = shell({ role: "Partner agency", current: gid, people: D.AGENCIES.map(function (x) { return { id: x.id, label: x.name + " · " + x.city }; }) });
+    bindAs("agency");
+    document.title = "Partner agency · " + ag.name + " · Abroadversity";
+
+    var EARN_STATUS = { expected: ["Expected", "sky"], due: ["Due", "warn"], processing: ["In payout", "sky"], paid: ["Paid", "ok"], none: ["No commission", "bad"] };
+    function earnChip(st) { var x = EARN_STATUS[st]; return '<span class="chip-s chip-' + x[1] + '">' + x[0] + "</span>"; }
+    function sum(rows, st) { return rows.filter(function (r) { return !st || st.indexOf(r.status) >= 0; }).reduce(function (n, r) { return n + r.amount; }, 0); }
+    // Money owed is shown to the rupee (rounded to ₹100), not to the nearest thousand.
+    function inr(l) {
+      if (!(l > 0)) return "₹0";
+      return l >= 1 ? "₹" + (Math.round(l * 100) / 100).toFixed(2) + " L" : "₹" + (Math.round(l * 1000) * 100).toLocaleString("en-IN");
+    }
+    function share(p) { var l = D.db.commissionLakh(p); return l > 0 ? "≈ " + inr(l) : "No commission"; }
+
+    // One line on where a student stands, from the agency's side.
+    function standing(c) {
+      var u = D.db.uniOfCase(c), s = D.db.student(c.studentId), miss = missingDocs(c);
+      if (c.stage === "closed") return "Closed: " + c.closedReason;
+      if (c.stage === "new") return first(counsellor.name) + " to send the first WhatsApp";
+      if (c.stage === "contacted") return miss.length ? "Waiting for " + U.plural(miss.length, "document") + " from " + first(s.name) : "Ready to submit to " + u.name;
+      if (c.stage === "applied") return c.uni.status === "rejected" ? u.name + " declined" : "With " + u.name + ": " + UNI_STATUS[c.uni.status].toLowerCase();
+      if (c.stage === "offer") return c.offerAccepted ? "Offer accepted: refer for the visa" : "Offer made: waiting for " + first(s.name) + " to accept";
+      if (c.stage === "visa") return "Visa: " + D.VISA_STEPS.filter(function (v) { return c.visa[v.id]; }).length + " of " + D.VISA_STEPS.length + " steps done with " + D.db.consultant(c.consultantId).name;
+      return "Enrolled at " + u.name;
+    }
+
+    var render = keepDrafts(function () {
+      var q = U.params(), tab = q.get("tab") || "students";
+      var cases = D.db.cases({ agencyId: gid });
+      var open = cases.filter(function (c) { return c.stage !== "closed" && c.stage !== "enrolled"; });
+      var rows = D.db.earnings(gid);
+      var html = '<div class="p-hello"><div><p class="eyebrow">Partner agency · ' + esc(ag.city) + "</p><h1>" + esc(ag.name) + '</h1><p class="muted">Your students and your counsellor (' + esc(counsellor.name) + "), on Abroadversity’s programmes, universities, visa and stays partners.</p></div>" +
+        '<button type="button" class="btn btn-primary" data-tab="add">Add a student</button></div>' +
+        stats([
+          { n: open.length, label: "Students in progress" },
+          { n: cases.filter(function (c) { return c.stage === "applied"; }).length, label: "With universities" },
+          { n: cases.filter(function (c) { return c.offerAccepted; }).length, label: "Offers accepted" },
+          { n: cases.filter(function (c) { return c.stage === "enrolled"; }).length, label: "Enrolled" },
+          { n: inr(sum(rows, ["paid"])), label: "Paid to you" },
+          { n: inr(sum(rows, ["due"])), label: "Due now", alert: sum(rows, ["due"]) > 0 },
+        ]) +
+        '<div class="p-tabs" role="tablist" aria-label="Agency">' +
+        '<button type="button" role="tab" data-tab="students" aria-selected="' + (tab === "students") + '">Students<em>' + cases.length + "</em></button>" +
+        '<button type="button" role="tab" data-tab="add" aria-selected="' + (tab === "add") + '">Add a student</button>' +
+        '<button type="button" role="tab" data-tab="earnings" aria-selected="' + (tab === "earnings") + '">Earnings<em>' + inr(sum(rows, ["due", "expected"])) + "</em></button></div>";
+
+      if (tab === "add") html += addForm();
+      else if (tab === "earnings") html += earnings(rows);
+      else html += students(cases, rows);
+      $("#p-body").innerHTML = html;
+    });
+    // The summary reads the form, so it is drawn after any typed values are put back.
+    var draw = function () { render(); if ($("#add-form")) summarise(); };
+
+    /* ----- students ----- */
+    function students(cases, rows) {
+      var sel = D.db.kase(U.params().get("case"));
+      if (!sel || cases.indexOf(sel) < 0) sel = cases[0];
+      if (!cases.length) return '<div class="empty"><h2>No students yet</h2><p class="muted">Add your first student. ' + esc(first(counsellor.name)) + ' gets them on the counsellor desk straight away.</p><button type="button" class="btn btn-primary" data-tab="add">Add a student</button></div>';
+      return '<div class="p-split"><div class="p-list" role="list">' + cases.map(function (c) {
+        var s = D.db.student(c.studentId), p = prog(c);
+        return '<button type="button" role="listitem" class="p-row' + (c === sel ? " is-on" : "") + '" data-open="' + c.id + '"><span class="p-row-top"><b>' + esc(s.name) + "</b>" + pill(c.stage) + '</span><span class="p-row-sub">' + esc(p.name) + " · " + esc(uniName(c)) + '</span><span class="p-row-foot"><span class="small muted">' + esc(standing(c)) + "</span></span></button>";
+      }).join("") + '</div><div class="p-detail">' + studentDetail(sel, rows.filter(function (r) { return r.caseId === sel.id; })) + "</div></div>";
+    }
+
+    function studentDetail(c, mine) {
+      var s = D.db.student(c.studentId), p = prog(c), u = D.db.uniOfCase(c), co = U.countryOf(p), miss = missingDocs(c);
+      var expected = D.db.commissionLakh(p);
+      var earn = mine.length ? '<table class="p-table earn"><tbody>' + mine.map(function (r) {
+        return "<tr><td><b>" + esc(r.label) + "</b>" + (r.note ? "<small>" + esc(r.note) + "</small>" : "") + "</td><td>" + earnChip(r.status) + '</td><td class="t-num">' + inr(r.amount) + "</td></tr>";
+      }).join("") + "</tbody></table>" :
+        '<p class="small">' + (expected > 0 ? "Your share of the university commission on this programme: <b>≈ " + inr(expected) + "</b>. It becomes expected once " + esc(first(s.name)) + " accepts an offer, and due on enrolment." : "Public universities in " + esc(co.name) + " pay no agent commission. You still earn on the room and the visa if " + esc(first(s.name)) + " books them here.") + "</p>";
+      return '<div class="d-head"><div><h2>' + esc(s.name) + '</h2><p class="small muted">' + esc(s.phone) + (s.city ? " · " + esc(s.city) : "") + " · added " + ago(c.createdAt) + "</p></div>" + pill(c.stage) + "</div>" +
+        '<p class="d-prog"><a href="programme.html?id=' + p.id + '">' + esc(p.name) + "</a> · " + esc(u.name) + ", " + esc(co.name) + "</p>" +
+        tracker(c) +
+        '<section class="next-card"><p class="eyebrow">Where it stands</p><h3>' + esc(standing(c)) + '</h3><p>Your counsellor works this student on the counsellor desk: WhatsApp, documents, submission to the university, visa referral.</p>' +
+        '<a class="btn btn-dark" href="counsellor.html?as=' + counsellor.id + "&case=" + c.id + '">Open in ' + esc(first(counsellor.name)) + "’s desk →</a></section>" +
+        '<section class="panel"><div class="panel-head"><h3>What you earn on ' + esc(first(s.name)) + "</h3>" + (mine.length ? '<span class="small muted">' + inr(sum(mine)) + " in all</span>" : "") + "</div>" + earn + "</section>" +
+        '<section class="panel"><div class="panel-head"><h3>Documents</h3><span class="small muted">' + (D.DOCS.length - miss.length) + " of " + D.DOCS.length + "</span></div>" + docList(c, false) + "</section>" +
+        timeline(c);
+    }
+
+    /* ----- add a student ----- */
+    var COUNTRY_ORDER = D.COUNTRIES.filter(function (co) { return D.PROGRAMMES.some(function (p) { return U.countryOf(p).id === co.id; }); });
+    function progsIn(cid) { return D.PROGRAMMES.filter(function (p) { return U.countryOf(p).id === cid && !p.closed; }).sort(function (a, b) { return D.db.commissionLakh(b) - D.db.commissionLakh(a) || a.name.localeCompare(b.name); }); }
+    // Best-paying first; the one picked to start is the best-paying a typical profile (65%, IELTS 6.5, ₹40 L) fits.
+    function progOptions(cid) {
+      var list = progsIn(cid), pick = list.find(function (p) { return p.req.pct <= 65 && p.req.ielts <= 6.5 && totalCostLakh(p) <= 40; }) || list[0];
+      return list.map(function (p) { return '<option value="' + p.id + '"' + (p === pick ? " selected" : "") + ">" + esc(p.name) + " · " + esc(U.uniOf(p).name) + " · " + share(p) + "</option>"; }).join("");
+    }
+    function addForm() {
+      var cid = U.params().get("country") || "uk";
+      function field(id, label, control, hint) { return '<div class="field"><label for="' + id + '">' + label + "</label>" + control + (hint ? '<span class="hint">' + hint + "</span>" : "") + "</div>"; }
+      function opts(list, cur) { return list.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join(""); }
+      return '<div class="p-grid"><form class="panel a-form" id="add-form" novalidate><div class="panel-head"><h3>Student</h3><span class="small muted">' + esc(first(counsellor.name)) + " gets the lead at once</span></div>" +
+        '<div class="a-fields">' +
+        field("ad-name", "Full name", '<input class="input" id="ad-name" autocomplete="off" data-keep required>') +
+        field("ad-phone", "WhatsApp number", '<input class="input" id="ad-phone" inputmode="tel" autocomplete="off" data-keep required>', "10 digits") +
+        field("ad-city", "City", '<input class="input" id="ad-city" autocomplete="off" data-keep>') +
+        "</div>" +
+        '<div class="panel-head"><h3>Programme</h3><span class="small muted">Sorted by what you earn</span></div><div class="a-fields">' +
+        field("ad-country", "Country", '<select class="select" id="ad-country">' + opts(COUNTRY_ORDER.map(function (co) { return [co.id, co.name + (D.COMMISSION[co.id] ? "" : " · no commission")]; }), cid) + "</select>") +
+        field("ad-prog", "Programme", '<select class="select" id="ad-prog" data-keep>' + progOptions(cid) + "</select>") +
+        "</div>" +
+        '<div class="panel-head"><h3>Eligibility</h3><span class="small muted">The same four questions the website asks</span></div><div class="a-fields">' +
+        field("ad-qual", "Qualification", '<select class="select" id="ad-qual" data-keep>' + opts([["done", "Completed"], ["final", "Final year"], ["lower", "Below entry level"]], "done") + "</select>") +
+        field("ad-pct", "Marks (%)", '<input class="input" id="ad-pct" type="number" min="33" max="100" value="65" data-keep>') +
+        field("ad-test", "English test", '<select class="select" id="ad-test" data-keep>' + opts([["ielts", "IELTS"], ["toefl", "TOEFL"], ["pte", "PTE"], ["none", "Not taken yet"]], "ielts") + "</select>") +
+        field("ad-score", "Score", '<input class="input" id="ad-score" type="number" step="0.5" min="0" value="6.5" data-keep>') +
+        field("ad-budget", "Budget a year", '<select class="select" id="ad-budget" data-keep>' + opts([[15, "Up to ₹15 L"], [25, "Up to ₹25 L"], [40, "Up to ₹40 L"], [999, "Above ₹40 L"]], 40) + "</select>") +
+        "</div>" +
+        '<button type="submit" class="btn btn-primary btn-lg">Add student and send to ' + esc(first(counsellor.name)) + "’s desk</button></form>" +
+        '<aside class="p-side"><section class="panel" id="ad-summary"></section></aside></div>';
+    }
+    function check(p) {
+      var pct = Number($("#ad-pct").value), test = $("#ad-test").value, score = Number($("#ad-score").value), qual = $("#ad-qual").value;
+      var testOk = test === "none" ? "warn" : score >= p.req[test] ? "ok" : "warn";
+      var marks = pct >= p.req.pct ? "ok" : pct >= p.req.pct - 5 ? "warn" : "bad";
+      if (qual === "lower" || marks === "bad") return "no";
+      var affordable = Number($("#ad-budget").value) >= totalCostLakh(p);
+      return marks === "ok" && testOk === "ok" && qual === "done" && affordable ? "good" : "close";
+    }
+    function summarise() {
+      var p = D.db.programme($("#ad-prog").value), box = $("#ad-summary");
+      if (!p) { box.innerHTML = '<p class="small muted">No open programmes in this country.</p>'; return; }
+      var u = U.uniOf(p), co = U.countryOf(p), test = $("#ad-test").value, l = D.db.commissionLakh(p);
+      box.innerHTML = '<div class="panel-head"><h3>' + esc(p.name) + "</h3>" + resultChip(check(p)) + '</div><p class="small muted">' + esc(u.name) + " · " + esc(u.city) + ", " + esc(co.name) + '</p><dl class="facts">' +
+        "<div><dt>Tuition a year</dt><dd>" + U.money(p.fee, co.currency) + "<br><small class=\"muted\">" + U.approx(p.fee, co.currency) + "</small></dd></div>" +
+        "<div><dt>Needs</dt><dd>" + p.req.pct + "% · " + (test === "none" ? "IELTS " + p.req.ielts : { ielts: "IELTS", toefl: "TOEFL", pte: "PTE" }[test] + " " + p.req[test]) + "</dd></div>" +
+        "<div><dt>Next intake</dt><dd>" + U.intakeLabel(p.intakes[0]) + "</dd></div>" +
+        "<div><dt>You earn</dt><dd>" + (l > 0 ? "<b>≈ " + inr(l) + "</b><br><small class=\"muted\">" + Math.round(D.AGENCY_TERMS.commissionShare * 100) + "% of the university’s commission</small>" : "No commission<br><small class=\"muted\">Room and visa referrals still pay</small>") + "</dd></div></dl>";
+    }
+
+    /* ----- earnings ----- */
+    function earnings(rows) {
+      var due = sum(rows, ["due"]);
+      var byCase = rows.slice().sort(function (a, b) { return ["due", "expected", "processing", "paid", "none"].indexOf(a.status) - ["due", "expected", "processing", "paid", "none"].indexOf(b.status); });
+      var payouts = D.db.payouts(gid);
+      var T = D.AGENCY_TERMS;
+      return '<div class="p-grid"><div class="p-main">' +
+        '<section class="next-card"><p class="eyebrow">Payout</p><h3>' + (due > 0 ? inr(due) + " is due to you" : "Nothing due right now") + "</h3><p>" + (due > 0 ? "Request it and Abroadversity pays to your bank account within 7 working days." : "Commission falls due when a student enrols; referrals when the room is confirmed or the visa approved.") + "</p>" +
+        (due > 0 ? '<button type="button" class="btn btn-primary" data-payout>Request payout of ' + inr(due) + "</button>" : "") + "</section>" +
+        '<section class="panel"><div class="panel-head"><h3>Every line you earn</h3><span class="small muted">Sample figures</span></div><div class="table-wrap"><table class="p-table earn earn-all"><thead><tr><th>Student</th><th>For</th><th>Status</th><th class="t-num">Amount</th></tr></thead><tbody>' +
+        (byCase.length ? byCase.map(function (r) {
+          var c = D.db.kase(r.caseId), s = D.db.student(c.studentId);
+          return '<tr><td><b>' + esc(s.name) + "</b><small>" + esc(uniName(c)) + "</small></td><td>" + esc(r.label) + (r.note ? "<small>" + esc(r.note) + "</small>" : "") + "</td><td>" + earnChip(r.status) + '</td><td class="t-num">' + inr(r.amount) + "</td></tr>";
+        }).join("") : '<tr><td colspan="4" class="muted">Earnings appear once a student accepts an offer.</td></tr>') +
+        "</tbody></table></div></section>" +
+        (payouts.length ? '<section class="panel"><div class="panel-head"><h3>Payouts</h3></div><ul class="bookings">' + payouts.map(function (x) {
+          var amt = sum(rows.filter(function (r) { return x.items.indexOf(r.key) >= 0; }));
+          return "<li><div><b>" + esc(x.id) + " · " + inr(amt) + "</b><small>Requested " + ago(x.at) + (x.paidAt ? " · paid " + ago(x.paidAt) : "") + "</small></div>" + earnChip(x.status === "paid" ? "paid" : "processing") + "</li>";
+        }).join("") + "</ul></section>" : "") +
+        '</div><aside class="p-side"><section class="panel terms"><div class="panel-head"><h3>How you earn</h3><span class="small muted">Pilot terms</span></div><ul class="terms-list">' +
+        "<li><b>" + Math.round(T.commissionShare * 100) + "%</b><span>of the commission the university pays, due when your student enrols</span></li>" +
+        "<li><b>" + inr(T.roomReferral / 100000) + "</b><span>for each room confirmed through a stays partner</span></li>" +
+        "<li><b>" + Math.round(T.visaReferralShare * 100) + "%</b><span>of the visa consultant’s fee, when the visa is approved</span></li>" +
+        "<li><b>₹0</b><span>to use Abroadversity. No joining fee, no monthly fee</span></li></ul>" +
+        '<table class="p-table rates"><thead><tr><th>Country</th><th class="t-num">Commission</th></tr></thead><tbody>' +
+        COUNTRY_ORDER.map(function (co) { var r = D.COMMISSION[co.id] || 0; return "<tr><td>" + U.flag(co, "mini-flag") + " " + esc(co.name) + '</td><td class="t-num">' + (r ? Math.round(r * 100) + "%" : '<span class="muted">None</span>') + "</td></tr>"; }).join("") +
+        '</tbody></table><p class="small muted">Commission as a share of year-one tuition. Indicative rates: the real rate comes from each university’s agreement. Public universities in Germany and Japan pay none.</p></section></aside></div>';
+    }
+
+    D.db.on(draw);
+    draw();
+    document.addEventListener("click", function (e) {
+      var t;
+      if ((t = e.target.closest("[data-tab]"))) { go({ tab: t.dataset.tab, case: null }); draw(); window.scrollTo({ top: 0 }); return; }
+      if ((t = e.target.closest("[data-open]"))) { go({ case: t.dataset.open }); draw(); if (window.innerWidth < 900) $(".p-detail").scrollIntoView({ behavior: "smooth" }); return; }
+      if (e.target.closest("[data-payout]")) { var x = D.db.requestPayout(gid); if (x) U.toast("Payout " + x.id + " requested"); }
+    });
+    document.addEventListener("change", function (e) {
+      if (e.target.id === "ad-country") {
+        go({ country: e.target.value });
+        $("#ad-prog").innerHTML = progOptions(e.target.value);
+      }
+      if (e.target.closest("#add-form")) summarise();
+    });
+    document.addEventListener("input", function (e) { if (e.target.closest("#add-form")) summarise(); });
+    document.addEventListener("submit", function (e) {
+      if (e.target.id !== "add-form") return;
+      e.preventDefault();
+      var name = $("#ad-name"), phone = $("#ad-phone"), bad = null;
+      [name, phone].forEach(function (el) { el.removeAttribute("aria-invalid"); });
+      if (phone.value.replace(/\D/g, "").length < 10) { phone.setAttribute("aria-invalid", "true"); bad = phone; }
+      if (!name.value.trim()) { name.setAttribute("aria-invalid", "true"); bad = name; }
+      if (bad) { bad.focus(); U.toast(bad === name ? "Enter the student’s name" : "Enter a 10-digit WhatsApp number"); return; }
+      var p = D.db.programme($("#ad-prog").value);
+      var made = D.db.createLead({
+        programmeId: p.id, name: name.value.trim(), phone: phone.value.trim(), city: $("#ad-city").value.trim(), agencyId: gid,
+        eligibility: { qual: $("#ad-qual").value, pct: Number($("#ad-pct").value), test: $("#ad-test").value, score: Number($("#ad-score").value), budget: Number($("#ad-budget").value), result: check(p) },
+      });
+      $$("#add-form [data-keep]").forEach(function (el) { if (el.tagName === "INPUT") el.value = ""; });
+      go({ tab: "students", case: made.kase.id, country: null });
+      draw();
+      U.toast(first(made.student.name) + " added. " + first(counsellor.name) + " has the lead.");
+    });
+  };
+
   /* ================= PUBLIC: STAYS ================= */
   D.pages.stays = function () {
     ui();
@@ -623,7 +832,7 @@
     ui();
     var db = D.db.get();
     $("#demo-stats").innerHTML = [
-      [db.students.length, "students"], [db.cases.length, "applications"], [D.UNIVERSITIES.length, "universities"], [D.CONSULTANTS.length, "visa partners"], [D.LISTINGS.length, "rooms"],
+      [db.students.length, "students"], [db.cases.length, "applications"], [D.UNIVERSITIES.length, "universities"], [D.CONSULTANTS.length, "visa partners"], [D.AGENCIES.length, "partner agencies"], [D.LISTINGS.length, "rooms"],
     ].map(function (s) { return '<div class="stat"><b>' + s[0] + "</b><span>" + s[1] + "</span></div>"; }).join("");
   };
 })();

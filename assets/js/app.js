@@ -92,9 +92,10 @@
     { key: "university", label: "University", href: "university.html" },
     { key: "consultant", label: "Visa consultant", href: "consultant.html" },
     { key: "partner", label: "Stays partner", href: "accommodation.html" },
+    { key: "agency", label: "Partner agency", href: "agency.html" },
   ];
   function demoBar(page) {
-    var side = { student: "student", counsellor: "counsellor", university: "university", consultant: "consultant", partner: "partner", demo: "" }[page];
+    var side = { student: "student", counsellor: "counsellor", university: "university", consultant: "consultant", partner: "partner", agency: "agency", demo: "" }[page];
     if (side === undefined) side = "site";
     return '<div class="demo-bar"><div class="container demo-row">' +
       '<a class="demo-tag" href="demo.html">Demo</a>' +
@@ -136,7 +137,7 @@
         "<p>Find a programme abroad you can get into and afford, then apply with free help from our counsellors.</p></div>" +
         '<div><h4>Explore</h4><ul><li><a href="programmes.html">Programmes</a></li><li><a href="index.html#countries">Countries</a></li><li><a href="universities.html">Universities</a></li><li><a href="stays.html">Student stays</a></li></ul></div>' +
         '<div><h4>Get help</h4><ul><li><a href="#" data-counsel>Free counselling</a></li><li><a href="programmes.html">Check eligibility</a></li><li><a href="student.html">My journey</a></li></ul></div>' +
-        '<div><h4>Partners</h4><ul><li><a href="university.html">For universities</a></li><li><a href="consultant.html">For visa consultants</a></li><li><a href="accommodation.html">For stays partners</a></li><li><a href="counsellor.html">Counsellor desk</a></li><li><a href="demo.html">How the demo works</a></li></ul></div>' +
+        '<div><h4>Partners</h4><ul><li><a href="university.html">For universities</a></li><li><a href="consultant.html">For visa consultants</a></li><li><a href="accommodation.html">For stays partners</a></li><li><a href="agency.html">For agencies</a></li><li><a href="counsellor.html">Counsellor desk</a></li><li><a href="demo.html">How the demo works</a></li></ul></div>' +
         "</div></footer>";
     }
 
@@ -144,7 +145,7 @@
       if (e.target.closest("[data-reset]")) {
         if (!D.db) return;
         D.db.reset();
-        ["student", "counsellor", "university", "consultant", "partner"].forEach(function (r) { D.db.as(r, ""); });
+        ["student", "counsellor", "university", "consultant", "partner", "agency"].forEach(function (r) { D.db.as(r, ""); });
         toast("Demo data reset");
         setTimeout(function () { location.reload(); }, 600);
         return;

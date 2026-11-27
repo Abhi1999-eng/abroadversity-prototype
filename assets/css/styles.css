@@ -807,7 +807,7 @@ textarea.input { resize: vertical; min-height: 64px; line-height: 1.45; }
 .uni-country-head a { margin-left: auto; }
 .demo-hero .lede { max-width: 64ch; margin-top: 12px; color: var(--ink-2); font-size: 17px; }
 .demo-hero h1 { margin-top: 8px; }
-.demo-hero .stats { grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 24px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+.demo-hero .stats { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: 24px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
 .demo-hero .stats .stat:first-child { padding-left: var(--gutter); }
 .sides { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .side-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: grid; gap: 8px; text-decoration: none; align-content: start; transition: border-color 0.15s, transform 0.15s; }
@@ -850,4 +850,30 @@ textarea.input { resize: vertical; min-height: 64px; line-height: 1.45; }
   .sides { grid-template-columns: 1fr; }
   .msg-form { grid-template-columns: 1fr; }
   .d-head h2 { font-size: 22px; }
+}
+
+/* Partner agency */
+.a-form { display: grid; gap: 16px; }
+.a-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: start; }
+.a-form .btn-lg { justify-self: start; }
+.t-num { text-align: right !important; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.p-table.earn td small { display: block; }
+.p-table.earn td:last-child, .p-table.earn th:last-child { padding-right: 0; }
+.terms { display: grid; gap: 14px; }
+.terms-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.terms-list li { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: baseline; font-size: 14px; color: var(--ink-2); }
+.terms-list b { font: 700 18px/1.1 var(--f-display); color: var(--ink); }
+.p-table.rates td, .p-table.rates th { font-size: 13.5px; }
+.p-table.rates th:last-child, .p-table.rates td:last-child { padding-right: 0; }
+#ad-summary { display: grid; gap: 12px; }
+.p-table.rates td:first-child { white-space: nowrap; }
+@media (max-width: 640px) {
+  .p-table.earn-all thead { display: none; }
+  .p-table.earn-all tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .p-table.earn-all td { border: 0; padding: 0; }
+  .p-table.earn-all td:nth-child(1) { grid-area: 1 / 1; }
+  .p-table.earn-all td:nth-child(2) { grid-area: 2 / 1; }
+  .p-table.earn-all td:nth-child(3) { grid-area: 1 / 2; justify-self: end; }
+  .p-table.earn-all td:nth-child(4) { grid-area: 2 / 2; align-self: start; font-weight: 650; color: var(--ink); }
+  .p-table.earn-all td[colspan] { grid-column: 1 / -1; }
 }

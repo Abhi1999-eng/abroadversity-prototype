@@ -6,13 +6,28 @@
 (function () {
   "use strict";
   var D = window.ABV;
-  var KEY = "abv.demo.v1";
+  var KEY = "abv.demo.v2";
 
   /* ---------- people and partners (fixed) ---------- */
   D.COUNSELLORS = [
     { id: "c1", name: "Neha Kapoor", city: "New Delhi", focus: "Canada, UK, Germany" },
     { id: "c2", name: "Arjun Verma", city: "Bengaluru", focus: "USA, Australia, Ireland" },
+    // Counsellors at partner agencies work their own students on the same desk.
+    { id: "c3", name: "Vikram Singh", city: "Patna", focus: "UK, Australia, Germany", agencyId: "g1" },
+    { id: "c4", name: "Shalini Gupta", city: "Lucknow", focus: "UK, Ireland", agencyId: "g2" },
   ];
+
+  // Partner agencies: local consultancies that bring their own students. Fictional.
+  D.AGENCIES = [
+    { id: "g1", name: "BrightPath Overseas", city: "Patna", owner: "Vikram Singh", counsellorId: "c3", region: "Bihar, Jharkhand and Nepal", since: "2026" },
+    { id: "g2", name: "Horizon Study Abroad", city: "Lucknow", owner: "Shalini Gupta", counsellorId: "c4", region: "Uttar Pradesh", since: "2026" },
+  ];
+
+  // What a partner agency earns. Commission is a share of the first-year tuition the university pays
+  // on enrolment; rates by country are indicative and the real rate comes from each university's agreement.
+  // Public universities in Germany and Japan pay agents no commission.
+  D.COMMISSION = { ca: 0.12, us: 0.1, uk: 0.15, au: 0.18, de: 0, ae: 0.1, ru: 0.05, kg: 0.05, ie: 0.15, fr: 0.05, nz: 0.15, jp: 0 };
+  D.AGENCY_TERMS = { commissionShare: 0.7, roomReferral: 4000, visaReferralShare: 0.1 };
 
   D.CONSULTANTS = [
     { id: "k1", name: "VisaPath Consultants", person: "Ritu Malhotra", city: "New Delhi", countries: ["ca", "uk", "de", "ie"], fee: 15000, rating: 4.8, files: 640 },
@@ -73,7 +88,7 @@
   function ago(hours) { return new Date(Date.now() - hours * 3600e3).toISOString(); }
 
   function seed() {
-    var db = { students: [], cases: [], messages: [], events: [], bookings: [], overrides: {}, listingOverrides: {}, seq: 100 };
+    var db = { students: [], cases: [], messages: [], events: [], bookings: [], payouts: [], overrides: {}, listingOverrides: {}, seq: 100 };
     function student(id, name, phone, city) { db.students.push({ id: id, name: name, phone: phone, email: name.split(" ")[0].toLowerCase() + "@example.com", city: city, createdAt: ago(400) }); }
     student("s1", "Aarav Sharma", "+91 98110 23456", "New Delhi");
     student("s2", "Diya Patel", "+91 98250 11223", "Ahmedabad");
@@ -83,6 +98,14 @@
     student("s6", "Sneha Iyer", "+91 98400 99001", "Chennai");
     student("s7", "Karan Gill", "+91 98140 12121", "Ludhiana");
     student("s8", "Ananya Rao", "+91 98450 34343", "Bengaluru");
+    // Students a partner agency brought in.
+    student("s9", "Aditya Kumar", "+91 70040 11223", "Patna");
+    student("s10", "Pooja Singh", "+91 70040 22334", "Muzaffarpur");
+    student("s11", "Saurabh Jha", "+91 70040 33445", "Darbhanga");
+    student("s12", "Nisha Kumari", "+91 70040 44556", "Gaya");
+    student("s13", "Amit Raj", "+91 70040 55667", "Ranchi");
+    student("s14", "Kavya Mishra", "+91 70040 66778", "Patna");
+    student("s15", "Ritika Srivastava", "+91 70070 77889", "Lucknow");
 
     function docs(done) {
       var out = {};
@@ -95,7 +118,7 @@
       return out;
     }
     function kase(o) {
-      var c = Object.assign({ consultantId: null, uni: { status: "not-sent" }, offerAccepted: false, visa: visa([]), docs: docs([]), waitingSince: null, closedReason: "" }, o);
+      var c = Object.assign({ agencyId: null, consultantId: null, uni: { status: "not-sent" }, offerAccepted: false, visa: visa([]), docs: docs([]), waitingSince: null, closedReason: "" }, o);
       c.updatedAt = c.updatedAt || c.createdAt;
       db.cases.push(c);
       return c;
@@ -145,8 +168,46 @@
     ev("a8", "consultant", "ClearRoute Visa Services: visa approved", 200);
     ev("a8", "counsellor", "Marked as enrolled", 150);
 
+    /* BrightPath Overseas (Patna): its own counsellor, its own students, one at every stage. */
+    var ALL = ["transcript", "english", "sop", "passport", "lor"];
+    kase({ id: "a9", agencyId: "g1", studentId: "s9", programmeId: "coventry-computer-science-m", counsellorId: "c3", stage: "new", createdAt: ago(2), waitingSince: ago(2), eligibility: elig("done", 66, "ielts", 6.5, 30, "good") });
+    ev("a9", "counsellor", "BrightPath Overseas added the student", 2);
+
+    kase({ id: "a10", agencyId: "g1", studentId: "s10", programmeId: "herts-health-m", counsellorId: "c3", stage: "contacted", createdAt: ago(90), waitingSince: ago(30), docs: docs(["transcript", "passport"]), eligibility: elig("done", 61, "ielts", 6, 30, "good") });
+    ev("a10", "counsellor", "BrightPath Overseas added the student", 90);
+    ev("a10", "counsellor", "Vikram Singh contacted Pooja on WhatsApp", 85);
+    msg("a10", "counsellor", "Vikram Singh", "Pooja, your Hertfordshire application is ready except your IELTS report, SOP and two recommendation letters. Upload them and I will submit.", 85);
+
+    kase({ id: "a11", agencyId: "g1", studentId: "s11", programmeId: "leeds-business-m", counsellorId: "c3", stage: "applied", createdAt: ago(300), docs: docs(ALL), uni: { status: "under-review", at: ago(70) }, eligibility: elig("done", 72, "ielts", 7, 40, "good") });
+    ev("a11", "counsellor", "BrightPath Overseas added the student", 300);
+    ev("a11", "counsellor", "Application submitted to University of Leeds", 140);
+    ev("a11", "university", "University of Leeds started reviewing the application", 70);
+
+    kase({ id: "a12", agencyId: "g1", studentId: "s12", programmeId: "deakin-data-science-m", counsellorId: "c3", consultantId: "k2", stage: "visa", createdAt: ago(900), docs: docs(ALL), uni: { status: "offer", offerType: "unconditional", at: ago(500) }, offerAccepted: true, visa: visa(["funds", "forms", "biometrics"]), eligibility: elig("done", 64, "pte", 62, 40, "good") });
+    ev("a12", "university", "Deakin University made an unconditional offer", 500);
+    ev("a12", "student", "Accepted the offer from Deakin University", 470);
+    ev("a12", "counsellor", "Referred to ClearRoute Visa Services for the visa", 400);
+    ev("a12", "partner", "Yarra House confirmed the room", 300);
+
+    kase({ id: "a13", agencyId: "g1", studentId: "s13", programmeId: "coventry-data-science-m", counsellorId: "c3", consultantId: "k1", stage: "enrolled", createdAt: ago(3000), docs: docs(ALL), uni: { status: "offer", offerType: "unconditional", at: ago(2200) }, offerAccepted: true, visa: visa(["funds", "forms", "biometrics", "submitted", "approved"]), eligibility: elig("done", 63, "ielts", 6.5, 30, "good") });
+    ev("a13", "consultant", "VisaPath Consultants: visa approved", 1700);
+    ev("a13", "counsellor", "Marked as enrolled", 1400);
+
+    kase({ id: "a14", agencyId: "g1", studentId: "s14", programmeId: "tum-computer-science-m", counsellorId: "c3", consultantId: "k1", stage: "enrolled", createdAt: ago(2600), docs: docs(ALL), uni: { status: "offer", offerType: "unconditional", at: ago(1900) }, offerAccepted: true, visa: visa(["funds", "forms", "biometrics", "submitted", "approved"]), eligibility: elig("done", 84, "ielts", 7.5, 15, "good") });
+    ev("a14", "consultant", "VisaPath Consultants: visa approved", 600);
+    ev("a14", "counsellor", "Marked as enrolled", 240);
+
+    /* Horizon Study Abroad (Lucknow). */
+    kase({ id: "a15", agencyId: "g2", studentId: "s15", programmeId: "herts-computer-science-m", counsellorId: "c4", stage: "applied", createdAt: ago(200), docs: docs(ALL), uni: { status: "submitted", at: ago(40) }, eligibility: elig("done", 68, "ielts", 6.5, 30, "good") });
+    ev("a15", "counsellor", "Application submitted to University of Hertfordshire", 40);
+
+    // Amit's commission was paid out last month.
+    db.payouts.push({ id: "P-1041", agencyId: "g1", items: ["a13:commission", "a13:visa"], status: "paid", at: ago(900), paidAt: ago(700) });
+
     db.bookings.push({ id: "b1", caseId: "a7", studentId: "s7", listingId: "l6", status: "requested", moveIn: "Oct", at: ago(10) });
     db.bookings.push({ id: "b2", caseId: "a8", studentId: "s8", listingId: "l8", status: "confirmed", moveIn: "Feb", at: ago(300), decidedAt: ago(290) });
+    db.bookings.push({ id: "b3", caseId: "a12", studentId: "s12", listingId: "l8", status: "confirmed", moveIn: "Feb", at: ago(320), decidedAt: ago(300) });
+    db.bookings.push({ id: "b4", caseId: "a14", studentId: "s14", listingId: "l7", status: "confirmed", moveIn: "Oct", at: ago(900), decidedAt: ago(880) });
     ev("a7", "student", "Requested a room: Room in shared flat, Schwabing", 10);
     ev("a8", "partner", "Yarra House confirmed the room", 290);
     return db;
@@ -215,6 +276,7 @@
         if (filter.studentId && c.studentId !== filter.studentId) return false;
         if (filter.counsellorId && c.counsellorId !== filter.counsellorId) return false;
         if (filter.consultantId && c.consultantId !== filter.consultantId) return false;
+        if (filter.agencyId !== undefined && (c.agencyId || null) !== filter.agencyId) return false;
         if (filter.uni) { var u = uniOfCase(c); if (!u || u.id !== filter.uni || c.uni.status === "not-sent") return false; }
         return true;
       }).sort(function (a, b) { return b.updatedAt.localeCompare(a.updatedAt); });
@@ -242,17 +304,19 @@
       var digits = form.phone.replace(/\D/g, "").slice(-10);
       var phone = "+91 " + digits.slice(0, 5) + " " + digits.slice(5);
       var s = db.students.find(function (x) { return x.phone.replace(/\D/g, "").slice(-10) === digits; });
-      if (!s) { s = { id: nextId("s"), name: form.name, phone: phone, email: form.email || "", city: "", createdAt: now() }; db.students.push(s); }
+      if (!s) { s = { id: nextId("s"), name: form.name, phone: phone, email: form.email || "", city: form.city || "", createdAt: now() }; db.students.push(s); }
       var open = db.cases.find(function (c) { return c.studentId === s.id && c.programmeId === form.programmeId && c.stage !== "closed"; });
       if (open) { open.eligibility = form.eligibility; log(open, "student", "Checked eligibility again"); studentActed(open); save(); return { student: s, kase: open }; }
-      // Counsellors take new leads in turn.
-      var load_ = D.COUNSELLORS.map(function (co) { return { id: co.id, n: db.cases.filter(function (c) { return c.counsellorId === co.id && c.stage === "new"; }).length }; }).sort(function (a, b) { return a.n - b.n; });
+      // Abroadversity's counsellors take new leads in turn; a partner agency's student goes to its own counsellor.
+      var agency = form.agencyId ? find(D.AGENCIES, form.agencyId) : null;
+      var load_ = agency ? [{ id: agency.counsellorId }] : D.COUNSELLORS.filter(function (co) { return !co.agencyId; }).map(function (co) { return { id: co.id, n: db.cases.filter(function (c) { return c.counsellorId === co.id && c.stage === "new"; }).length }; }).sort(function (a, b) { return a.n - b.n; });
       var docs = {};
       D.DOCS.forEach(function (d) { docs[d.id] = { status: "missing" }; });
-      var c = { id: nextId("a"), studentId: s.id, programmeId: form.programmeId, counsellorId: load_[0].id, consultantId: null, stage: "new", createdAt: now(), updatedAt: now(), waitingSince: now(), eligibility: form.eligibility, docs: docs, uni: { status: "not-sent" }, offerAccepted: false, visa: {}, closedReason: "" };
+      var c = { id: nextId("a"), agencyId: agency ? agency.id : null, studentId: s.id, programmeId: form.programmeId, counsellorId: load_[0].id, consultantId: null, stage: "new", createdAt: now(), updatedAt: now(), waitingSince: now(), eligibility: form.eligibility, docs: docs, uni: { status: "not-sent" }, offerAccepted: false, visa: {}, closedReason: "" };
       D.VISA_STEPS.forEach(function (v) { c.visa[v.id] = null; });
       db.cases.push(c);
-      log(c, "student", "Checked eligibility: " + { good: "meets the listed requirements", close: "close", no: "not a match yet" }[form.eligibility.result]);
+      if (agency) log(c, "counsellor", agency.name + " added the student");
+      else log(c, "student", "Checked eligibility: " + { good: "meets the listed requirements", close: "close", no: "not a match yet" }[form.eligibility.result]);
       save();
       return { student: s, kase: c };
     },
@@ -377,6 +441,47 @@
       if (o.rent === BASE_RENT[id]) delete o.rent;
       save();
     },
+  };
+
+  /* ---------- partner agencies ---------- */
+  api.agency = function (id) { return find(D.AGENCIES, id); };
+  api.agencyOfCase = function (c) { return c && c.agencyId ? find(D.AGENCIES, c.agencyId) : null; };
+  // Rupees (in lakh) the agency earns on one programme: its share of the university's commission.
+  api.commissionLakh = function (p) {
+    var u = find(D.UNIVERSITIES, p.uni), rate = D.COMMISSION[u.country] || 0;
+    return (p.fee * D.RATES[find(D.COUNTRIES, u.country).currency] / 100000) * rate * D.AGENCY_TERMS.commissionShare;
+  };
+  // Every line an agency earns, with where it stands: expected, due, in payout, paid, or none.
+  api.earnings = function (agencyId) {
+    var paidOut = {};
+    db.payouts.filter(function (x) { return x.agencyId === agencyId; }).forEach(function (x) { x.items.forEach(function (k) { paidOut[k] = x; }); });
+    var rows = [];
+    db.cases.filter(function (c) { return c.agencyId === agencyId; }).forEach(function (c) {
+      var p = programme(c.programmeId), u = uniOfCase(c);
+      function add(kind, label, amount, status, note) {
+        var key = c.id + ":" + kind, x = paidOut[key];
+        if (x) status = x.status === "paid" ? "paid" : "processing";
+        rows.push({ key: key, caseId: c.id, kind: kind, label: label, amount: amount, status: status, note: note || "", payout: x || null });
+      }
+      if (c.uni.status === "offer" && c.offerAccepted && c.stage !== "closed") {
+        var rate = D.COMMISSION[u.country] || 0;
+        if (!rate) add("commission", "University commission", 0, "none", "Public university: no agent commission");
+        else add("commission", "University commission", api.commissionLakh(p), c.stage === "enrolled" ? "due" : "expected", c.stage === "enrolled" ? "University pays after enrolment" : "Due once the student enrols");
+      }
+      if (db.bookings.some(function (b) { return b.caseId === c.id && b.status === "confirmed"; })) add("room", "Room referral", D.AGENCY_TERMS.roomReferral / 100000, "due");
+      if (c.consultantId && c.visa.approved) add("visa", "Visa referral", api.consultant(c.consultantId).fee * D.AGENCY_TERMS.visaReferralShare / 100000, "due");
+    });
+    return rows;
+  };
+  api.payouts = function (agencyId) { return db.payouts.filter(function (x) { return x.agencyId === agencyId; }).sort(function (a, b) { return b.at.localeCompare(a.at); }); };
+  api.requestPayout = function (agencyId) {
+    var due = api.earnings(agencyId).filter(function (r) { return r.status === "due" && r.amount > 0; });
+    if (!due.length) return null;
+    db.seq += 1;
+    var x = { id: "P-" + (1000 + db.seq), agencyId: agencyId, items: due.map(function (r) { return r.key; }), status: "processing", at: now() };
+    db.payouts.push(x);
+    save();
+    return x;
   };
 
   // Where a journey stands, from the student's side: done steps and the one that is next.
